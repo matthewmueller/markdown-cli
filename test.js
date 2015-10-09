@@ -1,6 +1,6 @@
-const childProcess = require('child_process');
-const test = require('ava');
-const chalk = require('chalk');
+import childProcess from 'child_process';
+import test from 'ava';
+import chalk from 'chalk';
 
 const output = `
 markdown-cli
