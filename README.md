@@ -1,4 +1,4 @@
-# markdown-cli
+# markdown-cli [![Build Status](https://travis-ci.org/cilice/markdown-cli.svg?branch=master)](https://travis-ci.org/cilice/markdown-cli)
 
 > Output markdown to CLI
 
