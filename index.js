@@ -2,15 +2,19 @@
 
 const marked = require('marked');
 const wrapAnsi = require('wrap-ansi');
-const terminalRenderer = require('./renderer');
+const TerminalRenderer = require('./renderer');
 
 module.exports = (data, count, hard) => {
+	const width = typeof count !== 'undefined' ? count : process.stdout.columns;
+
 	marked.setOptions({
-		renderer: terminalRenderer,
+		renderer: new TerminalRenderer({
+			width,
+			hard
+		}),
 		gfm: true,
 		tables: true,
-		breaks: true,
-		smartLists: true
+		breaks: true
 	});
 
 	let output = marked(data);

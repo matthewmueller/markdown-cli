@@ -53,13 +53,17 @@ function insertEmojis(text) {
 const transform = compose(unescape, insertEmojis);
 
 class CliRenderer {
+	constructor(options) {
+		this.cli = options;
+	}
 	code(text) {
 		return indentString(padding(highlight(text)), ' ', 4);
 	}
 	blockquote(quote) {
 		quote = transform(quote.trim());
-		quote = `${chalk.grey('|')} ${chalk.black(quote)}`;
-		return indentString(padding(quote), ' ', 4);
+		quote = `${chalk.gray(quote)}`;
+		quote = indentString(padding(quote), `${chalk.grey('|')} `);
+		return indentString(padding(quote), ` `, 4);
 	}
 	html(html) {
 		return html;
@@ -73,7 +77,8 @@ ${heading}`;
 		return (level === 1) ? boldHeading : heading;
 	}
 	hr() {
-		return padding(chalk.underline('--'));
+		const output = '-'.repeat(this.cli.width);
+		return padding(chalk.reset(output));
 	}
 	list(body) {
 		body = transform(body);
@@ -84,7 +89,8 @@ ${heading}`;
 
 		if (isNested) {
 			text = indentString(text, ' ', 2);
-			text = `${chalk.grey('-')} ${text.trim()}`;
+			text = `
+${chalk.grey('-')} ${text.trim()}`;
 		} else {
 			text = `
 ${chalk.grey('-')} ${text}`;
@@ -125,4 +131,4 @@ ${chalk.grey('-')} ${text}`;
 
 }
 
-module.exports = new CliRenderer();
+module.exports = CliRenderer;
