@@ -9,7 +9,8 @@ module.exports = (data, count, hard) => {
 		renderer: terminalRenderer,
 		gfm: true,
 		tables: true,
-		breaks: true
+		breaks: true,
+		smartLists: true
 	});
 
 	let output = marked(data);

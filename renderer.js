@@ -3,6 +3,7 @@
 const chalk = require('chalk');
 const emoji = require('node-emoji');
 const indentString = require('indent-string');
+const cardinal = require('cardinal');
 
 function unescape(html) {
 	return html
@@ -11,6 +12,18 @@ function unescape(html) {
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, `'`);
+}
+
+function highlight(code) {
+	if (!chalk.enabled) {
+		return chalk.green(code);
+	}
+
+	try {
+		return cardinal.highlight(code);
+	} catch (e) {
+		return chalk.green(code);
+	}
 }
 
 const padding = text => {
@@ -30,37 +43,54 @@ function compose() {
 	};
 }
 
-const transform = compose(unescape, emoji.emojify.bind(emoji));
+function insertEmojis(text) {
+	return text.replace(/:([A-Za-z0-9_\-\+]+?):/g, emojiString => {
+		const emojiSign = emoji.get(emojiString);
+		return (!emojiSign) ? emojiString : `${emojiSign} `;
+	});
+}
+
+const transform = compose(unescape, insertEmojis);
 
 class CliRenderer {
-	code(code) {
-		return indentString(padding(chalk.green(code)), ' ', 4);
+	code(text) {
+		return indentString(padding(highlight(text)), ' ', 4);
 	}
 	blockquote(quote) {
-		quote = transform(quote);
-		return indentString(padding(chalk.black(quote)), ' ', 4);
+		quote = transform(quote.trim());
+		quote = `${chalk.grey('|')} ${chalk.black(quote)}`;
+		return indentString(padding(quote), ' ', 4);
 	}
 	html(html) {
 		return html;
 	}
 	heading(text, level) {
 		text = transform(text);
+		text = `${'#'.repeat(level)} ${text}`;
+		const heading = padding(chalk.red.bold(text));
 		const boldHeading = `
-${chalk.bold.underline(text)}
-
-`;
-		const heading = padding(chalk.underline(text));
+${heading}`;
 		return (level === 1) ? boldHeading : heading;
 	}
 	hr() {
 		return padding(chalk.underline('--'));
 	}
 	list(body) {
+		body = transform(body);
 		return padding(chalk.reset(body));
 	}
 	listitem(text) {
-		return `${chalk.red('-')} ${text}
-`;
+		const isNested = text.indexOf('\n') !== -1;
+
+		if (isNested) {
+			text = indentString(text, ' ', 2);
+			text = `${chalk.grey('-')} ${text.trim()}`;
+		} else {
+			text = `
+${chalk.grey('-')} ${text}`;
+		}
+
+		return text;
 	}
 	paragraph(text) {
 		text = transform(text);
@@ -87,7 +117,7 @@ ${chalk.bold.underline(text)}
 	}
 	link(href, title, text) {
 		const hasText = text && text !== href;
-		return (hasText) ? `${chalk.blue(emoji.emojify(text))} (${chalk.magenta(href)})` : chalk.magenta(href);
+		return (hasText) ? `${chalk.blue(insertEmojis(text))} (${chalk.magenta(href)})` : chalk.magenta(href);
 	}
 	image(href, title, text) {
 		return (title) ? `![${chalk.blue(text)} – ${chalk.blue(title)}](${chalk.magenta(href)})` : `![${chalk.blue(text)}](${chalk.magenta(href)})`;
