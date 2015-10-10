@@ -4,6 +4,17 @@ const chalk = require('chalk');
 const emoji = require('node-emoji');
 const indentString = require('indent-string');
 const cardinal = require('cardinal');
+const Table = require('cli-table');
+
+const transform = compose(unescape, insertEmojis);
+
+const TABLE_CELL_SPLIT = '^*||*^';
+const TABLE_ROW_WRAP = '*|*|*|*';
+const TABLE_ROW_WRAP_REGEXP = new RegExp(escapeRegExp(TABLE_ROW_WRAP), 'g');
+
+function escapeRegExp(str) {
+	return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+}
 
 function unescape(html) {
 	return html
@@ -12,6 +23,25 @@ function unescape(html) {
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, `'`);
+}
+
+function generateTableRow(text) {
+	if (!text) {
+		return [];
+	}
+
+	const data = [];
+
+	transform(text).split('\n').forEach(line => {
+		if (!line) {
+			return;
+		}
+		const parsed = line.replace(TABLE_ROW_WRAP_REGEXP, '').split(TABLE_CELL_SPLIT);
+
+		data.push(parsed.splice(0, parsed.length - 1));
+	});
+
+	return data;
 }
 
 function highlight(code) {
@@ -49,8 +79,6 @@ function insertEmojis(text) {
 		return (!emojiSign) ? emojiString : `${emojiSign} `;
 	});
 }
-
-const transform = compose(unescape, insertEmojis);
 
 class CliRenderer {
 	constructor(options) {
@@ -97,6 +125,24 @@ ${chalk.grey('-')} ${text}`;
 		}
 
 		return text;
+	}
+	table(header, body) {
+		const table = new Table({
+			head: generateTableRow(header)[0]
+		});
+
+		generateTableRow(body).forEach(row => {
+			table.push(row);
+		});
+
+		return table.toString();
+	}
+	tablerow(content) {
+		return `${TABLE_ROW_WRAP}${content}${TABLE_ROW_WRAP}
+`;
+	}
+	tablecell(content) {
+		return content + TABLE_CELL_SPLIT;
 	}
 	paragraph(text) {
 		text = transform(text);
