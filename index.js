@@ -1,7 +1,6 @@
 'use strict';
 
 const marked = require('marked');
-const wrapAnsi = require('wrap-ansi');
 const TerminalRenderer = require('./renderer');
 
 module.exports = (data, count, hard) => {
@@ -17,16 +16,11 @@ module.exports = (data, count, hard) => {
 		breaks: true
 	});
 
-	let output = marked(data);
-	if (typeof count !== 'undefined') {
-		if (hard) {
-			output = wrapAnsi(output, count, {
-				hard
-			});
-		} else {
-			output = wrapAnsi(output, count);
-		}
+	try {
+		data = marked(data);
+	} catch (e) {
+		// console.log(e);
 	}
 
-	return output;
+	return data;
 };

@@ -2,8 +2,7 @@ import childProcess from 'child_process';
 import test from 'ava';
 const pkg = require('./package.json');
 
-const output = `
-# markdown-cli
+const output = `# markdown-cli
 
 👍  Wohoo!
 

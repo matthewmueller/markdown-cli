@@ -1,152 +1,119 @@
 'use strict';
-/* eslint-disable prefer-reflect */
 const chalk = require('chalk');
-const emoji = require('node-emoji');
-const indentString = require('indent-string');
-const cardinal = require('cardinal');
 const Table = require('cli-table');
+const utils = require('./utils');
+const cache = new Map();
 
-const transform = compose(unescape, insertEmojis);
-
-const TABLE_CELL_SPLIT = '^*||*^';
-const TABLE_ROW_WRAP = '*|*|*|*';
-const TABLE_ROW_WRAP_REGEXP = new RegExp(escapeRegExp(TABLE_ROW_WRAP), 'g');
-
-function escapeRegExp(str) {
-	return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
-}
-
-function unescape(html) {
-	return html
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, `'`);
-}
-
-function generateTableRow(text) {
-	if (!text) {
-		return [];
-	}
-
-	const data = [];
-
-	transform(text).split('\n').forEach(line => {
-		if (!line) {
-			return;
-		}
-		const parsed = line.replace(TABLE_ROW_WRAP_REGEXP, '').split(TABLE_CELL_SPLIT);
-
-		data.push(parsed.splice(0, parsed.length - 1));
-	});
-
-	return data;
-}
-
-function highlight(code) {
-	if (!chalk.enabled) {
-		return chalk.green(code);
-	}
-
-	try {
-		return cardinal.highlight(code);
-	} catch (e) {
-		return chalk.green(code);
-	}
-}
-
-const padding = text => {
-	return `${text}
-
-`;
-};
-
-function compose() {
-	const funcs = arguments;
-	return function () {
-		let args = arguments;
-		for (let i = funcs.length; i-- > 0;) {
-			args = [funcs[i].apply(this, args)];
-		}
-		return args[0];
-	};
-}
-
-function insertEmojis(text) {
-	return text.replace(/:([A-Za-z0-9_\-\+]+?):/g, emojiString => {
-		const emojiSign = emoji.get(emojiString);
-		return (!emojiSign) ? emojiString : `${emojiSign} `;
-	});
-}
-
-class CliRenderer {
+class Renderer {
 	constructor(options) {
 		this.cli = options;
 	}
 	code(text) {
-		return indentString(padding(highlight(text)), ' ', 4);
+		const flow = utils.compose(
+			utils.highlight,
+			utils.indent,
+			text => utils.wrapAnsi(text, this.cli.width, {hard: this.cli.hard}),
+			utils.padding
+		);
+
+		return flow(text);
 	}
-	blockquote(quote) {
-		quote = transform(quote.trim());
-		quote = `${chalk.gray(quote)}`;
-		quote = indentString(padding(quote), `${chalk.grey('|')} `);
-		return indentString(padding(quote), ` `, 4);
+	paragraph(text) {
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji,
+			text => utils.wrapAnsi(text, this.cli.width, {hard: this.cli.hard}),
+			utils.padding
+		);
+
+		const output = flow(text);
+		cache.set(output, {text, level: 0});
+
+		return output;
 	}
-	html(html) {
-		return html;
+	blockquote(text) {
+		const input = cache.get(text);
+		const level = input.level + 1;
+
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji,
+			text => utils.wrapAnsi(text, this.cli.width - (2 * level), {hard: this.cli.hard}),
+			text => utils.indentString(text, `${chalk.grey('|')} `, level),
+			utils.padding
+		);
+
+		const output = flow(input.text);
+		cache.set(output, {text: input.text, level});
+
+		return output;
+	}
+	html(text) {
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji
+		);
+		return flow(text);
 	}
 	heading(text, level) {
-		text = transform(text);
-		text = `${'#'.repeat(level)} ${text}`;
-		const heading = padding(chalk.red.bold(text));
-		const boldHeading = `
-${heading}`;
-		return (level === 1) ? boldHeading : heading;
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji,
+			text => `${'#'.repeat(level)} ${text}`,
+			chalk.red.bold,
+			text => utils.wrapAnsi(text, this.cli.width, {hard: this.cli.hard}),
+			utils.padding
+		);
+		const output = flow(text);
+		return output;
 	}
 	hr() {
+		const flow = utils.compose(chalk.reset, utils.padding);
 		const output = '-'.repeat(this.cli.width);
-		return padding(chalk.reset(output));
+		return flow(output);
 	}
-	list(body) {
-		body = transform(body);
-		return padding(chalk.reset(body));
+	list(text) {
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji,
+			text => utils.indentString(text, ` `, 2),
+			text => text.replace(/\n+/g, '\n'),
+			text => utils.wrapList(text, this.cli.width, {hard: this.cli.hard}),
+			utils.padding
+		);
+
+		const output = flow(text);
+		return output;
 	}
 	listitem(text) {
-		const isNested = text.indexOf('\n') !== -1;
+		const wrap = utils.compose(
+			text => `\n- ${text}`
+		);
 
-		if (isNested) {
-			text = indentString(text, ' ', 2);
-			text = `
-${chalk.grey('-')} ${text.trim()}`;
-		} else {
-			text = `
-${chalk.grey('-')} ${text}`;
-		}
-
-		return text;
+		return wrap(text);
 	}
 	table(header, body) {
+		const flow = utils.compose(
+			utils.unescape,
+			utils.emoji
+		);
+
 		const table = new Table({
-			head: generateTableRow(header)[0]
+			head: utils.generateTableRow(header, flow)[0]
 		});
 
-		generateTableRow(body).forEach(row => {
+		utils.generateTableRow(body, flow).forEach(row => {
 			table.push(row);
 		});
 
-		return table.toString();
+		return utils.padding(table.toString());
 	}
-	tablerow(content) {
-		return `${TABLE_ROW_WRAP}${content}${TABLE_ROW_WRAP}
+	tablerow(text) {
+		return `${utils.TABLE_ROW_WRAP}${text}${utils.TABLE_ROW_WRAP}
 `;
 	}
-	tablecell(content) {
-		return content + TABLE_CELL_SPLIT;
-	}
-	paragraph(text) {
-		text = transform(text);
-		return padding(chalk.reset(text));
+	tablecell(text) {
+		return text + utils.TABLE_CELL_SPLIT;
 	}
 	strong(text) {
 		return chalk.bold(text);
@@ -157,9 +124,13 @@ ${chalk.grey('-')} ${text}`;
 	text(text) {
 		return text;
 	}
-	codespan(code) {
-		code = unescape(code);
-		return chalk.inverse(code);
+	codespan(text) {
+		const flow = utils.compose(
+			utils.unescape,
+			chalk.inverse
+		);
+
+		return flow(text);
 	}
 	br() {
 		return '\n';
@@ -169,7 +140,7 @@ ${chalk.grey('-')} ${text}`;
 	}
 	link(href, title, text) {
 		const hasText = text && text !== href;
-		return (hasText) ? `${chalk.blue(insertEmojis(text))} (${chalk.magenta(href)})` : chalk.magenta(href);
+		return (hasText) ? `${chalk.blue(utils.emoji(text))} (${chalk.magenta(href)})` : chalk.magenta(href);
 	}
 	image(href, title, text) {
 		return (title) ? `![${chalk.blue(text)} – ${chalk.blue(title)}](${chalk.magenta(href)})` : `![${chalk.blue(text)}](${chalk.magenta(href)})`;
@@ -177,4 +148,4 @@ ${chalk.grey('-')} ${text}`;
 
 }
 
-module.exports = CliRenderer;
+module.exports = Renderer;

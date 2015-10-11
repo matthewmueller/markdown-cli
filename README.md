@@ -22,6 +22,7 @@ npm test
 
 - [cardinal](https://github.com/thlorenz/cardinal): Syntax highlights JavaScript code with ANSI colors to be printed to the terminal.
 - [chalk](https://github.com/chalk/chalk): Terminal string styling done right. Much color.
+- [cli-table](https://github.com/Automattic/cli-table): Pretty unicode tables for the CLI
 - [get-stdin](https://github.com/sindresorhus/get-stdin): Get stdin as a string or buffer
 - [indent-string](https://github.com/sindresorhus/indent-string): Indent each line in a string
 - [marked](https://github.com/chjj/marked): A markdown parser built for speed
