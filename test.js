@@ -19,19 +19,6 @@ test('main', t => {
 	});
 });
 
-test('show error if no path is specified', t => {
-	t.plan(1);
-
-	const cp = childProcess.spawn('./cli.js', {
-		stdio: [process.stdin, null, null]
-	});
-
-	cp.stderr.setEncoding('utf8');
-	cp.stderr.on('data', data => {
-		t.assert(/Expected a filepath/.test(data), data);
-	});
-});
-
 test('stdin', t => {
 	t.plan(2);
 
