@@ -9,8 +9,6 @@ const output = `# markdown-cli
 `;
 
 test('main', t => {
-	t.plan(2);
-
 	childProcess.execFile('./cli.js', ['fixture.md', '--no-color'], {
 		cwd: __dirname
 	}, (err, stdout) => {
@@ -20,8 +18,6 @@ test('main', t => {
 });
 
 test('stdin', t => {
-	t.plan(2);
-
 	childProcess.exec('cat fixture.md | ./cli.js --no-color', {
 		cwd: __dirname
 	}, (err, stdout) => {
@@ -31,8 +27,6 @@ test('stdin', t => {
 });
 
 test('show help screen', t => {
-	t.plan(2);
-
 	childProcess.execFile('./cli.js', ['--help'], (err, stdout) => {
 		t.ifError(err);
 		t.assert(/Output markdown to CLI/.test(stdout), stdout);
@@ -40,7 +34,6 @@ test('show help screen', t => {
 });
 
 test('show version', t => {
-	t.plan(2);
 	const regex = new RegExp(pkg.version);
 
 	childProcess.execFile('./cli.js', ['--version'], (err, stdout) => {
