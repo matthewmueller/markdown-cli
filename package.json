@@ -41,7 +41,7 @@
   "homepage": "https://github.com/cilice/markdown-cli#readme",
   "preferGlobal": true,
   "dependencies": {
-    "cardinal": "^0.5.0",
+    "cardinal": "^0.6.0",
     "chalk": "^1.1.1",
     "cli-table": "^0.3.1",
     "get-stdin": "^5.0.0",
@@ -57,10 +57,10 @@
     "wrap-ansi": "^1.0.0"
   },
   "devDependencies": {
-    "ava": "^0.3.0",
+    "ava": "^0.6.0",
     "coveralls": "^2.11.4",
     "nyc": "^3.2.2",
-    "xo": "^0.11.0"
+    "xo": "^0.11.1"
   },
   "xo": {
     "esnext": true
