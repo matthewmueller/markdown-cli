@@ -36,7 +36,7 @@
   "homepage": "https://github.com/cilice/markdown-cli#readme",
   "preferGlobal": true,
   "dependencies": {
-    "cardinal": "^0.6.0",
+    "cardinal": "^0.7.1",
     "chalk": "^1.1.1",
     "cli-table": "^0.3.1",
     "get-stdin": "^5.0.0",
